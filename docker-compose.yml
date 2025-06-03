@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    # デバッグや開発時に便利。本番環境では不要な場合が多い。
+    # restart: unless-stopped
