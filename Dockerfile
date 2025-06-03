@@ -29,4 +29,5 @@ EXPOSE 8000
 # uvicornを使ってmain.pyのFastAPIアプリケーションを起動します。
 # --host 0.0.0.0: 外部からのアクセスを許可するために必要です。
 # --port 8000: アプリケーションがリッスンするポートです。
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Dockerfile 内の該当部分を推奨変更
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "${PORT:-8000}"]

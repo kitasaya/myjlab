@@ -1,0 +1,45 @@
+name: Deploy to Cloud Run # ワークフローの名前
+
+on:
+  push:
+    branches:
+      - main # mainブランチへのpushをトリガーとする
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }} # GitHub SecretsからGCPプロジェクトIDを取得
+  SERVICE_NAME: my-cal-app # Cloud Runサービス名 (任意: あなたのアプリケーション名に合わせる)
+  REGION: asia-northeast1 # デプロイするGCPリージョン (例: 東京リージョン 'asia-northeast1')
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest # ワークフローを実行するランナー (Linux環境)
+
+    steps:
+      - name: Checkout code # コードをリポジトリからチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx # DockerイメージビルドのためのBuildxを設定
+        uses: docker/setup-buildx-action@v3
+
+      - name: Authenticate with Google Cloud # GCPに認証
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }} # GitHub Secretsからサービスアカウントキーを取得
+
+      - name: Configure Docker to use Google Cloud Artifact Registry # DockerがArtifact Registryを使うように設定
+        run: gcloud auth configure-docker ${REGION}-docker.pkg.dev
+
+      - name: Build and push Docker image # DockerイメージをビルドしてArtifact Registryにプッシュ
+        run: |
+          docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${SERVICE_NAME}/fastapi-image:${{ github.sha }} .
+          docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${SERVICE_NAME}/fastapi-image:${{ github.sha }}
+
+      - name: Deploy to Cloud Run # Cloud Runにデプロイ
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }} # Cloud Runサービス名
+          image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/${SERVICE_NAME}/fastapi-image:${{ github.sha }} # デプロイするイメージ
+          region: ${{ env.REGION }} # デプロイリージョン
+          # env_vars: | # 必要に応じて環境変数を追加
+          #   MY_FASTAPI_VAR=some_value
+          no_allow_unauthenticated: true # 認証なしアクセスを許可しない場合 (コメントアウトで認証なしアクセス許可)
