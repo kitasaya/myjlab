@@ -17,7 +17,7 @@ app = FastAPI(
 )
 
 # 静的ファイルの提供設定
-# app.mount("/static", StaticFiles(directory="frontend"), name="static")
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 
 # ルートURL ("/") にアクセスがあったときに index.html を返すエンドポイントを明示的に定義

@@ -80,3 +80,62 @@ async function processNumbers() {
         resultOutput.textContent = '';
     }
 }
+
+async function evaluateUserEquation() {
+    const sourceNumber = sourceNumberInput.value.trim();
+    const targetValue = targetValueInput.value.trim();
+    const userEquation = targetEquationInput.value.trim();
+
+    resultOutput.textContent = '';
+    errorMessage.textContent = '';
+    errorMessage.classList.remove("active");
+
+    if (!sourceNumber) {
+        errorMessage.textContent = '元の数字を入力してください。';
+        errorMessage.classList.add("active");
+        return;
+    }
+    if (!targetValue || isNaN(parseInt(targetValue))) {
+        errorMessage.textContent = '目標値（自然数）を入力してください。';
+        errorMessage.classList.add("active");
+        return;
+    }
+    if (!userEquation) {
+        errorMessage.textContent = '式を入力してください。';
+        errorMessage.classList.add("active");
+        return;
+    }
+
+    try {
+        const response = await fetch('/evaluate_user_expression', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                source_number_str: sourceNumber,
+                target_value: parseInt(targetValue),
+                user_expression: userEquation
+            }),
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            let userResult = `【あなたの式の評価】\n`;
+            userResult += `式: ${data.user_expression}\n`;
+            userResult += `値: ${data.user_expression_value ?? '評価不可'}\n`;
+            userResult += `長さ: ${data.user_expression_length}文字, 演算子数: ${data.user_operator_count}\n`;
+            userResult += `判定: ${data.is_valid_expression ? (data.is_correct_value ? '正解！' : '値が一致しません') : '式が無効です'}\n`;
+            if (data.comparison_result) {
+                userResult += `比較: ${data.comparison_result}\n`;
+            }
+            resultOutput.textContent = userResult;
+        } else {
+            errorMessage.textContent = `エラー: ${data.detail || '不明なエラー'}`;
+            errorMessage.classList.add("active");
+        }
+    } catch (error) {
+        errorMessage.textContent = `ネットワークエラー: ${error.message}`;
+        errorMessage.classList.add("active");
+    }
+}
