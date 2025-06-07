@@ -5,8 +5,8 @@ const errorMessage = document.getElementById('errorMessage');
 const targetEquationInput = document.getElementById('targetEquationInput');
 
 async function processNumbers() {
-    const sourceNumber = sourceNumberInput.value.trim();
-    const targetValue = targetValueInput.value.trim();
+    let sourceNumber = toHalfWidth(sourceNumberInput.value.trim());
+    let targetValue = toHalfWidth(targetValueInput.value.trim());
 
     resultOutput.textContent = '処理中...';
     errorMessage.textContent = '';
@@ -90,9 +90,9 @@ async function processNumbers() {
 }
 
 async function evaluateUserEquation() {
-    const sourceNumber = sourceNumberInput.value.trim();
-    const targetValue = targetValueInput.value.trim();
-    const userEquation = targetEquationInput.value.trim();
+    let sourceNumber = toHalfWidth(sourceNumberInput.value.trim());
+    let targetValue = toHalfWidth(targetValueInput.value.trim());
+    let userEquation = toHalfWidth(targetEquationInput.value.trim());
 
     resultOutput2.textContent = '';
     errorMessage.textContent = '';
@@ -146,6 +146,12 @@ async function evaluateUserEquation() {
         errorMessage.textContent = `ネットワークエラー: ${error.message}`;
         errorMessage.classList.add("active");
     }
+}
+
+function toHalfWidth(str) {
+    return str.replace(/[！-～]/g, function(tmp) {
+        return String.fromCharCode(tmp.charCodeAt(0) - 0xFEE0);
+    }).replace(/　/g, " ");
 }
 
 window.addEventListener('DOMContentLoaded', function() {
