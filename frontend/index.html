@@ -172,6 +172,10 @@
         <div id="resultOutput" class="result-box">
             </div>
         <div id="errorMessage" class="error-message"></div>
+        <div class="form-group">
+            <label for="targetValueInput">分解したい目標値（自然数） (例: 27):</label>
+            <input type="text" id="targetEquationInput" placeholder="例: 27">
+        </div>
     </div>
 
     <script>
@@ -179,6 +183,7 @@
         const targetValueInput = document.getElementById('targetValueInput');
         const resultOutput = document.getElementById('resultOutput');
         const errorMessage = document.getElementById('errorMessage');
+        const targetEquationInput = document.getElementById('targetEquationInput');
 
         async function processNumbers() {
             const sourceNumber = sourceNumberInput.value.trim();
