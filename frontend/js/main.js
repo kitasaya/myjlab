@@ -86,7 +86,7 @@ async function evaluateUserEquation() {
     const targetValue = targetValueInput.value.trim();
     const userEquation = targetEquationInput.value.trim();
 
-    resultOutput.textContent = '';
+    resultOutput2.textContent = '';
     errorMessage.textContent = '';
     errorMessage.classList.remove("active");
 
@@ -129,7 +129,7 @@ async function evaluateUserEquation() {
             if (data.comparison_result) {
                 userResult += `比較: ${data.comparison_result}\n`;
             }
-            resultOutput.textContent = userResult;
+            resultOutput2.textContent = userResult;
         } else {
             errorMessage.textContent = `エラー: ${data.detail || '不明なエラー'}`;
             errorMessage.classList.add("active");
