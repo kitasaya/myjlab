@@ -120,7 +120,7 @@ h2 {
     background-color: var(--background-light);
     padding: 20px;
     border-radius: 8px;
-    margin-top: 25px;
+    margin: 25px 0;
     white-space: pre-wrap;
     word-wrap: break-word;
     max-height: 400px;
@@ -133,6 +133,7 @@ h2 {
 }
 
 .error-message {
+    display: none;
     color: var(--error-color);
     font-weight: 700;
     margin-top: 15px;
@@ -142,4 +143,8 @@ h2 {
     padding: 10px;
     border-radius: 8px;
     border: 1px solid var(--error-color);
+}
+
+.error-message.active {
+    display: block;
 }

@@ -10,20 +10,24 @@ async function processNumbers() {
 
     resultOutput.textContent = '処理中...';
     errorMessage.textContent = '';
+    errorMessage.classList.remove("active");
     resultOutput.style.color = 'var(--text-color)'; /* Reset color */
 
     if (!sourceNumber) {
         errorMessage.textContent = '元の数字を入力してください。';
+        errorMessage.classList.add("active");
         resultOutput.textContent = '';
         return;
     }
     if (!targetValue || isNaN(parseInt(targetValue))) {
         errorMessage.textContent = '目標値（自然数）を入力してください。';
+        errorMessage.classList.add("active");
         resultOutput.textContent = '';
         return;
     }
     if (parseInt(targetValue) <= 0) {
         errorMessage.textContent = '目標値は正の自然数である必要があります。';
+        errorMessage.classList.add("active");
         resultOutput.textContent = '';
         return;
     }
@@ -67,10 +71,12 @@ async function processNumbers() {
 
         } else {
             errorMessage.textContent = `エラー: ${data.detail || '不明なエラー'}`;
+            errorMessage.classList.add("active");
             resultOutput.textContent = '';
         }
     } catch (error) {
         errorMessage.textContent = `ネットワークエラー: ${error.message}`;
+        errorMessage.classList.add("active");
         resultOutput.textContent = '';
     }
 }
