@@ -15,11 +15,11 @@
 
         <div class="form-group">
             <label for="sourceNumberInput">きみの大好きな数字 (式生成に使用) (例: 142857):</label>
-            <input type="text" id="sourceNumberInput" placeholder="例: 142857">
+            <input type="number" id="sourceNumberInput" placeholder="例: 142857" inputmode="numeric" pattern="\d*">
         </div>
         <div class="form-group">
             <label for="targetValueInput">分解したい目標値（自然数） (例: 27):</label>
-            <input type="number" id="targetValueInput" placeholder="例: 27">
+            <input type="number" id="targetValueInput" placeholder="例: 27" inputmode="numeric" pattern="\d*">
         </div>
         <div class="form-group">
             <button onclick="processNumbers()">計算と分解を実行</button>
