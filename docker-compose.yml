@@ -1,11 +1,21 @@
-version: '3.8'
+version: "3.8" # Docker Composeのバージョンを指定
 
 services:
-  app:
-    build: .
+  number-api: # サービス名 (任意の名前)
+    build: . # 現在のディレクトリにあるDockerfileを使ってイメージをビルド
     ports:
-      - "8000:8000"
+      - "8000:8000" # ホストのポート8000をコンテナのポート8000にマッピング
     volumes:
+      # ホストの現在のディレクトリをコンテナの/appにマウント
+      # これにより、main.pyやfrontendに変更を加えた際にコンテナを再起動するだけで変更が反映されます
+      # ただし、本番環境ではこのvolumes設定は避けるべきです (キャッシュの問題やパフォーマンスのため)
       - .:/app
-    # デバッグや開発時に便利。本番環境では不要な場合が多い。
-    # restart: unless-stopped
+    # デバッグや開発時にホットリロードを有効にする場合は、以下のcommandを使用します。
+    # この場合、DockerfileのCMDは上書きされます。
+    # command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    # 本番環境に近い形でGunicornを使用する場合は、以下のcommandを使用します。
+    command: gunicorn --bind 0.0.0.0:8000 --workers 4 --worker-class uvicorn.workers.UvicornWorker main:app
+    environment:
+      # 必要に応じて環境変数を定義できます
+      # - MY_ENV_VAR=some_value
+      PYTHONUNBUFFERED: 1 # Pythonの出力をバッファリングせずにすぐに出力する
