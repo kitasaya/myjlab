@@ -471,7 +471,7 @@ async def evaluate_user_expression(request: EvaluateUserExpressionRequest):
     if is_valid_expression and user_expression_value == request.target_value:
         is_correct_value = True
 
-    comparison_result = "きみの式は評価できませんでした。"  # 初期値
+    comparison_result = "きみの式は評価できなかった。"  # 初期値
 
     # 自動生成された式の情報を取得
     auto_gen_expression = None
@@ -502,7 +502,7 @@ async def evaluate_user_expression(request: EvaluateUserExpressionRequest):
                     auto_gen_expression_length is not None
                     and user_expression_length < auto_gen_expression_length
                 ):
-                    comparison_result = f"きみの式の方が自動生成された式より {auto_gen_expression_length - user_expression_length} 文字短いよ！素晴らしい！"
+                    comparison_result = f"きみの式の方がぼくの式より {auto_gen_expression_length - user_expression_length} 文字短い！素晴らしい！"
                 elif (
                     auto_gen_expression_length is not None
                     and user_expression_length == auto_gen_expression_length
@@ -512,29 +512,29 @@ async def evaluate_user_expression(request: EvaluateUserExpressionRequest):
                         auto_gen_operator_count is not None
                         and user_operator_count < auto_gen_operator_count
                     ):
-                        comparison_result = f"きみの式は自動生成された式と同じ長さだけど、演算子が {auto_gen_operator_count - user_operator_count} 個少ないよ！すごい！"
+                        comparison_result = f"きみの式はぼくの式と同じ長さだけど、演算子が {auto_gen_operator_count - user_operator_count} 個少ないよ！すごい！"
                     elif (
                         auto_gen_operator_count is not None
                         and user_operator_count == auto_gen_operator_count
                     ):
-                        comparison_result = "きみの式は自動生成された式と同じ長さで、同じ演算子数だよ！良くできたね！"
+                        comparison_result = (
+                            "きみの式はぼくの式と同じ長さで、同じ演算子数だよ！"
+                        )
                     else:
-                        comparison_result = "きみの式は自動生成された式と同じ長さだけど、より多くの演算子を使っているようだね。もっとシンプルにできるかも？"
+                        comparison_result = "きみの式はぼくの式と同じ長さだけど、より多くの演算子を使っているよ。もっとシンプルにできるかも？"
                 else:
                     if auto_gen_expression_length is not None:
-                        comparison_result = f"きみの式は自動生成された式より {user_expression_length - auto_gen_expression_length} 文字長いよ。"
+                        comparison_result = f"きみの式はぼくの式より {user_expression_length - auto_gen_expression_length} 文字長いよ。"
                     else:
-                        comparison_result = "自動生成された式と比べることができませんでした。再計算してみてください。"
+                        comparison_result = "ぼくの式と比べることができませんでした。再計算してみてください。"
             else:
-                comparison_result = (
-                    "きみの式は目標値に分解できませんでした。再度挑戦してね！"
-                )
+                comparison_result = "きみの式は目標値に分解できませんでした。"
         else:
-            comparison_result = "自動生成された式は、目標値に完全に分解できませんでした。そのため比較ができません。"
+            comparison_result = (
+                "ぼくの式は、目標値に完全に分解できなかった。そのため比較ができないよ。"
+            )
     else:
-        comparison_result = (
-            "まず「計算と分解を実行」して、自動生成された式を準備してください。"
-        )
+        comparison_result = "まず「計算と分解を実行」して、自動生成された式を準備して。"
 
     return EvaluateUserExpressionResponse(
         user_expression=request.user_expression,
