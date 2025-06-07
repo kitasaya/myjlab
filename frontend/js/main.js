@@ -139,3 +139,15 @@ async function evaluateUserEquation() {
         errorMessage.classList.add("active");
     }
 }
+
+window.addEventListener('DOMContentLoaded', function() {
+    const audio = document.getElementById('bgm');
+    // ユーザー操作なしで自動再生はブラウザで制限される場合が多いので、下記の工夫をします
+    function tryPlay() {
+        audio.play().catch(() => {});
+    }
+    // ページをクリックしたら再生
+    document.body.addEventListener('click', tryPlay, { once: true });
+    // すぐに再生を試みる（許可されていれば自動再生される）
+    tryPlay();
+});
