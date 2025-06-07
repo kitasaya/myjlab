@@ -35,6 +35,7 @@ async def read_root():
 # CSVファイル保存用の一時ディレクトリ（処理後に削除するため）
 TEMP_DATA_DIR = "temp_data"  # 新しい一時ディレクトリ名
 os.makedirs(TEMP_DATA_DIR, exist_ok=True)
+generated_expressions_cache: Dict[str, Dict[int, str]] = {}
 
 
 # --- ヘルパー関数群 ---
@@ -271,7 +272,7 @@ class ProcessNumberRequest(BaseModel):
 )
 async def process_number(request: ProcessNumberRequest):
     """
-    元の数字の桁から式を生成し、その式を使って目標値を分解します。
+    元の数字の桁から式を生成し、その式を使って目標値を分解する。
     """
     # 1. source_number_str のバリデーション
     try:
