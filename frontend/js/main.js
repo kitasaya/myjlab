@@ -52,7 +52,7 @@ async function processNumbers() {
                 if (step.expression !== 'No further decomposition') {
                     resultText += `  ${step.remaining_before} を表現するために ${step.value_used} = ${step.expression} を使用。残り: ${step.remaining_after}\n`;
                 } else if (step.remaining_before > 0) {
-                    resultText += `  これ以上分解できませんでした。最終的な残り: ${step.remaining_before}\n`;
+                    resultText += `  これ以上分解できなかったよ。最終的な残り: ${step.remaining_before}\n`;
                 }
             });
             if (data.full_expression_string) {
@@ -63,7 +63,7 @@ async function processNumbers() {
             } else if (data.final_remaining > 0) {
                 resultText += `\nおおよその表現: (残り ${data.final_remaining})`;
             } else {
-                resultText += `\n完全に表現できました！`;
+                resultText += `\n完全に表現できた！`;
             }
 
             resultOutput.textContent = resultText;
