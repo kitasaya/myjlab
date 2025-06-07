@@ -336,3 +336,7 @@ async def process_number(request: ProcessNumberRequest):
         if os.path.exists(temp_csv_filepath_full):
             os.remove(temp_csv_filepath_full)
             print(f"一時ファイル '{temp_csv_filepath_full}' を削除しました。")
+
+
+# uvicorn main:app --reload --port 8000
+# http://localhost:8000
