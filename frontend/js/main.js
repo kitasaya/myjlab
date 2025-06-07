@@ -50,7 +50,11 @@ async function processNumbers() {
             let resultText = `目標値 ${targetValue} の分解結果:\n\n`;
             data.decomposition_steps.forEach(step => {
                 if (step.expression !== 'No further decomposition') {
-                    resultText += `  ${step.remaining_before} を表現するために ${step.value_used} = ${step.expression} を使用。残り: ${step.remaining_after}\n`;
+                    if (window.innerWidth <= 600) {
+                        resultText += `${step.remaining_before} を表現するために ${step.value_used} = ${step.expression} を使用。\n残り: ${step.remaining_after}\n`;
+                    } else {
+                        resultText += `${step.remaining_before} を表現するために ${step.value_used} = ${step.expression} を使用。残り: ${step.remaining_after}\n`;
+                    }
                 } else if (step.remaining_before > 0) {
                     resultText += `  これ以上分解できなかったよ。最終的な残り: ${step.remaining_before}\n`;
                 }
@@ -58,7 +62,11 @@ async function processNumbers() {
             if (data.full_expression_string) {
                 resultText += `\n結果: ${data.total_expressed_value} = ${data.full_expression_string}`;
                 if (data.final_remaining > 0) {
-                    resultText += ` + (残り ${data.final_remaining})`;
+                    if (window.innerWidth <= 600) {
+                        resultText += `\n+ (残り ${data.final_remaining})`;
+                    } else {
+                        resultText += ` + (残り ${data.final_remaining})`;
+                    }
                 }
             } else if (data.final_remaining > 0) {
                 resultText += `\nおおよその表現: (残り ${data.final_remaining})`;
