@@ -37,6 +37,9 @@ TEMP_DATA_DIR = "temp_data"  # 新しい一時ディレクトリ名
 os.makedirs(TEMP_DATA_DIR, exist_ok=True)
 generated_expressions_cache: Dict[str, Dict[int, str]] = {}
 
+# 今回は source_number_str が変わらなければ、直前の decomposition_result を保持する形式にする
+last_decomposition_result_for_comparison: Dict[str, "DecompositionResult"] = {}
+
 
 # --- ヘルパー関数群 ---
 def is_prime(n: int) -> bool:
@@ -174,6 +177,74 @@ def load_expressions_from_csv_logic(csv_filepath: str) -> Dict[int, str]:
     return sorted_expressions
 
 
+import re
+from typing import List, Optional
+
+
+def safe_eval_expression(expression: str, allowed_digits: List[str]) -> Optional[int]:
+    """
+    ユーザーが入力した式を安全に評価し、正の整数を返す。
+    セキュリティのため、組み込み関数へのアクセスを制限し、不正な文字をチェックする。
+    さらに、式に含まれる数字がallowed_digitsのみで構成されているかを簡易的にチェックする。
+    """
+
+    # 許可する文字: 数字、四則演算子、カッコ、空白
+    base_allowed_chars_pattern = r"^[\d\s\+\-\*\/\(\)]*$"
+    if not re.fullmatch(base_allowed_chars_pattern, expression):
+        print(f"安全でない文字が含まれています (基本文字以外): {expression}")
+        return None
+
+    # ここから、ユーザーが入力した式に含まれる「数字文字」が、
+    # allowed_digits (例: ['1', '4', '2', '8', '5', '7']) に含まれるかチェックする
+    # これは「142857」という数字を使って「3」という桁を使う式は許さない、という簡易的なチェック。
+    # 例: source="12", expression="1+3" -> False (3がallowed_digitsにない)
+    # 例: source="12", expression="1+1" -> True (1がallowed_digitsにある)
+    # 例: source="12", expression="12+1" -> True (1,2がallowed_digitsにある)
+
+    # 式の中からすべての数字の塊を抽出
+    all_numbers_in_expression = re.findall(r"\d+", expression)
+
+    # 各数字の塊を個々の桁に分解し、それらの桁が allowed_digits に含まれているかチェック
+    for num_str in all_numbers_in_expression:
+        for digit_char in num_str:
+            if digit_char not in allowed_digits:
+                print(
+                    f"許可されていない桁 '{digit_char}' が式に含まれています: {expression}"
+                )
+                return None
+
+    try:
+        # eval() をより安全に実行するために、__builtins__ を空にする
+        result = eval(expression, {"__builtins__": None}, {})
+
+        # 結果が整数で、かつ正の値であることを確認
+        if isinstance(result, (int, float)) and result > 0 and result == int(result):
+            return int(result)
+
+        print(f"評価結果が正の整数ではありません: {result}")
+        return None
+    except (
+        SyntaxError,
+        ZeroDivisionError,
+        TypeError,
+        NameError,
+        OverflowError,
+        ValueError,
+    ) as e:
+        print(f"式の評価エラー: {e} for expression: {expression}")
+        return None
+
+
+def calculate_expression_metrics(expression: str) -> Dict[str, int]:
+    """
+    式の長さと演算子数を計算する。
+    """
+    stripped_expression = expression.replace(" ", "")  # スペース除去
+    length = len(stripped_expression)
+    operator_count = sum(stripped_expression.count(op) for op in ["+", "-", "*", "/"])
+    return {"length": length, "operator_count": operator_count}
+
+
 class DecompositionStep(BaseModel):
     expression: str
     value_used: int
@@ -187,6 +258,8 @@ class DecompositionResult(BaseModel):
     total_expressed_value: int
     full_expression_string: str
     status: str
+    auto_gen_expression_length: Optional[int] = None  # 追加
+    auto_gen_operator_count: Optional[int] = None  # 追加
 
 
 def express_target_value_logic(
@@ -248,12 +321,22 @@ def express_target_value_logic(
         else "完全に表現できませんでした。"
     )
 
+    # メトリクス計算を追加
+    auto_gen_expression_length = None
+    auto_gen_operator_count = None
+    if full_expression_string:
+        metrics = calculate_expression_metrics(full_expression_string)
+        auto_gen_expression_length = metrics["length"]
+        auto_gen_operator_count = metrics["operator_count"]
+
     return DecompositionResult(
         decomposition_steps=decomposition_steps,
         final_remaining=remaining_value,
         total_expressed_value=total_expressed,
         full_expression_string=full_expression_string,
         status=status_message,
+        auto_gen_expression_length=auto_gen_expression_length,
+        auto_gen_operator_count=auto_gen_operator_count,
     )
 
 
@@ -263,6 +346,27 @@ def express_target_value_logic(
 class ProcessNumberRequest(BaseModel):
     source_number_str: str  # 式を生成するための元の数字 (例: "142857")
     target_value: int  # 分解したい目標値 (例: 27)
+
+
+# ユーザー入力式の評価リクエスト用モデル
+class EvaluateUserExpressionRequest(BaseModel):
+    source_number_str: str  # 元の数字（例: "142857"） - 比較のために必要
+    target_value: int  # 分解したい目標値（例: 27）
+    user_expression: str  # ユーザーが入力した式文字列（例: "1+4*2-8"）
+
+
+class EvaluateUserExpressionResponse(BaseModel):
+    user_expression: str  # ユーザーが入力した式
+    user_expression_value: Optional[int]
+    # ユーザーの式が評価された値 (評価できない場合はNone)
+    user_expression_length: int  # ユーザーの式の文字数（スペース除く）
+    user_operator_count: int  # ユーザーの式の演算子数
+    is_valid_expression: bool  # 式が有効なPythonの式として評価できたか
+    is_correct_value: bool  # ユーザーの式の評価値が目標値と一致したか
+    comparison_result: str  # 自動生成された式との比較結果のメッセージ
+    auto_gen_expression: Optional[str] = None  # 自動生成された分解の完全な式（比較用）
+    auto_gen_expression_length: Optional[int] = None  # 自動生成された式の文字数
+    auto_gen_operator_count: Optional[int] = None  # 自動生成された式の演算子数
 
 
 @app.post(
@@ -324,6 +428,10 @@ async def process_number(request: ProcessNumberRequest):
         decomposition_result = express_target_value_logic(
             request.target_value, available_expressions_for_decomposition
         )
+        last_decomposition_result_for_comparison[request.source_number_str] = (
+            decomposition_result
+        )
+
         return decomposition_result
 
     except Exception as e:
@@ -337,6 +445,109 @@ async def process_number(request: ProcessNumberRequest):
         if os.path.exists(temp_csv_filepath_full):
             os.remove(temp_csv_filepath_full)
             print(f"一時ファイル '{temp_csv_filepath_full}' を削除しました。")
+
+
+@app.post(
+    "/evaluate_user_expression",
+    response_model=EvaluateUserExpressionResponse,
+    summary="ユーザーが入力した式を評価し、自動生成された式と比較します",
+)
+async def evaluate_user_expression(request: EvaluateUserExpressionRequest):
+    """
+    ユーザーが入力した式を評価し、その値、長さ、計算量を計算し、
+    自動生成された式の情報と比較して結果を返します。
+    """
+    user_expression_str = request.user_expression.replace(" ", "")  # スペースを除去
+    user_metrics = calculate_expression_metrics(user_expression_str)
+    user_expression_length = user_metrics["length"]
+    user_operator_count = user_metrics["operator_count"]
+
+    user_expression_value = safe_eval_expression(
+        request.user_expression, list(request.source_number_str)
+    )
+
+    is_valid_expression = user_expression_value is not None
+    is_correct_value = False
+    if is_valid_expression and user_expression_value == request.target_value:
+        is_correct_value = True
+
+    comparison_result = "きみの式は評価できなかった。"  # 初期値
+
+    # 自動生成された式の情報を取得
+    auto_gen_expression = None
+    auto_gen_expression_length = None
+    auto_gen_operator_count = None
+
+    # 前回 /process_number で計算された分解結果をキャッシュから取得
+    # source_number_str に対応する DecompositionResult が存在するかチェック
+    if request.source_number_str in last_decomposition_result_for_comparison:
+        cached_result = last_decomposition_result_for_comparison[
+            request.source_number_str
+        ]
+
+        # キャッシュされた結果が、今回ユーザーが挑戦している target_value と一致するか確認
+        # もし異なる target_value であれば、比較は意味をなさないため無視
+        if (
+            cached_result.total_expressed_value == request.target_value
+            and cached_result.final_remaining == 0
+        ):
+            # 完全に表現できた場合のみ比較対象とする
+            auto_gen_expression = cached_result.full_expression_string
+            auto_gen_expression_length = cached_result.auto_gen_expression_length
+            auto_gen_operator_count = cached_result.auto_gen_operator_count
+
+            # ユーザーの式が正しい値に評価できた場合のみ比較
+            if is_correct_value:
+                if (
+                    auto_gen_expression_length is not None
+                    and user_expression_length < auto_gen_expression_length
+                ):
+                    comparison_result = f"きみの式の方がぼくの式より {auto_gen_expression_length - user_expression_length} 文字短い！素晴らしい！"
+                elif (
+                    auto_gen_expression_length is not None
+                    and user_expression_length == auto_gen_expression_length
+                ):
+                    # 長さが同じ場合、演算子数で比較するロジック
+                    if (
+                        auto_gen_operator_count is not None
+                        and user_operator_count < auto_gen_operator_count
+                    ):
+                        comparison_result = f"きみの式はぼくの式と同じ長さだけど、演算子が {auto_gen_operator_count - user_operator_count} 個少ないよ！すごい！"
+                    elif (
+                        auto_gen_operator_count is not None
+                        and user_operator_count == auto_gen_operator_count
+                    ):
+                        comparison_result = (
+                            "きみの式はぼくの式と同じ長さで、同じ演算子数だよ！"
+                        )
+                    else:
+                        comparison_result = "きみの式はぼくの式と同じ長さだけど、より多くの演算子を使っているよ。もっとシンプルにできるかも？"
+                else:
+                    if auto_gen_expression_length is not None:
+                        comparison_result = f"きみの式はぼくの式より {user_expression_length - auto_gen_expression_length} 文字長いよ。"
+                    else:
+                        comparison_result = "ぼくの式と比べることができませんでした。再計算してみてください。"
+            else:
+                comparison_result = "きみの式は目標値に分解できませんでした。"
+        else:
+            comparison_result = (
+                "ぼくの式は、目標値に完全に分解できなかった。そのため比較ができないよ。"
+            )
+    else:
+        comparison_result = "まず「計算と分解を実行」して、自動生成された式を準備して。"
+
+    return EvaluateUserExpressionResponse(
+        user_expression=request.user_expression,
+        user_expression_value=user_expression_value,
+        user_expression_length=user_expression_length,
+        user_operator_count=user_operator_count,
+        is_valid_expression=is_valid_expression,
+        is_correct_value=is_correct_value,
+        comparison_result=comparison_result,
+        auto_gen_expression=auto_gen_expression,
+        auto_gen_expression_length=auto_gen_expression_length,
+        auto_gen_operator_count=auto_gen_operator_count,
+    )
 
 
 # uvicorn main:app --reload --port 8000
